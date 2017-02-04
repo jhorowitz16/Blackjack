@@ -9,12 +9,11 @@ class Blackjack {
     public static ArrayList hand_1 = new ArrayList();
     public static ArrayList hand_2 = new ArrayList();
     public static ArrayList<Card> deck = new ArrayList<Card>();
-    public static boolean player_1_done = false;
-    public static boolean player_2_done = false;
 
     /** Game constants */
     public static final int SUITS = 4;
     public static final int RANKS = 13; 
+    public static final int GOAL = 21; 
 
     /** Initialize the 52 card deck for the game */
     public static void buildDeck() {
@@ -39,31 +38,6 @@ class Blackjack {
         return newCard;
     }
 
-    /** Report the result of the game - who busts, who wins etc */
-    public static String resolveGame() {
-        int score_1 = calcPoints(hand_1);
-        int score_2 = calcPoints(hand_2);
-        if (score_1 > 21 && score_2 > 21)
-            return "Tie: Both Bust";
-        else if (score_1 > 21)
-            return "Player Two wins with " + score_2 + " points";
-        else if (score_2 > 21)
-            return "Player One wins with " + score_1 + " points";
-        // deal with win condition where neither busts
-        if (player_1_done && player_2_done) {
-            String winner;
-            if (score_1 < score_2)
-                winner = "Player Two";
-            else if (score_1 > score_2)
-                winner = "Player One";
-            else
-                winner = "Nobody";
-            return winner + " wins the game!";
-        }
-        // game not over
-        return "Not Over";
-    }
-
     /** Calculate the total points in a hand (arraylist) */
     public static int calcPoints(ArrayList<Card> hand) {
 
@@ -85,22 +59,32 @@ class Blackjack {
                 for (int i = 0; i < origSize; i += 1) {
                     int oldScore = possScores.get(i);
                     possScores.set(i, oldScore + 1);
-                    possScores.add(possScores.get(i) + 11);
+                    possScores.add(oldScore + 11);
                 }
-                // double check here - size should be origSize * 2
-                if (origSize * 2 != possScores.size())
+                // double check here - size should be origSize * 2 (debugging)
+                if (origSize * 2 != possScores.size()) {
+                    System.out.println(possScores);
+                    System.out.println(origSize);
+                    System.out.println(possScores.size());
                     return -1;
+                }
             }
         }
         // Get the best score that doesn't go over 21
         // assume the hand is nonNull
         int optimal = -1;
+        int minScore = Integer.MAX_VALUE;
         for (int score : possScores) {
             if (score <= 21 && score > optimal) {
                 optimal = score;
             }
+            minScore = Math.min(minScore, score);
         }
-        return optimal;
+        // first priority - pick the "optimal" under 21
+        // second priority - just pick the smallest one... tho busting regardless
+        if (optimal > 0)
+            return optimal;
+        return minScore;
     }
 
     /** Simple display for each card in the player's hand */ 
@@ -114,8 +98,9 @@ class Blackjack {
         for (Card c : hand) {
             String rank = Card.rankToString(c.getRank());
             String suit = Card.suitToString(c.getSuit());
-            System.out.println(">>> < " + rank + " of " + suit + " >");
+            System.out.println(">>> <" + rank + " of " + suit + ">");
         }
+        System.out.println(">>>    Score: " + calcPoints(hand)); 
     }
     
     /** Print both hands... */
@@ -127,17 +112,71 @@ class Blackjack {
     /** Give both players 2 card hands and display hands */
     public static void startGame() {
         buildDeck();
-        displayBothHands();
         hand_1.add(drawCard());
         hand_1.add(drawCard());
         hand_2.add(drawCard());
         hand_2.add(drawCard());
-        displayBothHands();
+    }
+
+    /** Take a single turn and return the score (-1 for bust) */
+    public static int takeTurn(int hand_num) {
+        System.out.println("");
+        ArrayList<Card> hand;
+        String player_name;
+        if (hand_num == 1) {
+            hand = hand_1;
+            player_name = "Player One";
+        } else {
+            hand = hand_2;
+            player_name = "Player Two";
+        }
+        int currScore = calcPoints(hand);
+        displayHand(hand_num);
+        // if the score means the game is over, then exit and report that player busts
+        if (currScore == GOAL) {
+            System.out.println(player_name + ", you got 21!");
+            return currScore;
+
+        } else if (currScore > GOAL) {
+            System.out.println(player_name + ", you busted!");
+            return -1;
+        }
+        // Give user options
+        System.out.println("\n" + player_name + ", make your move");
+        System.out.println("*** press H for Hit, S for Stand ***");
+        while (true) {
+            Scanner sc = new Scanner(System.in);
+            String input_text = sc.nextLine().toLowerCase();
+            // check for blank lines (do nothing)
+            if (input_text.length() <= 0)
+                continue; 
+            char first = input_text.charAt(0);
+            if (first == 'h') {
+                hand.add(drawCard());
+                return takeTurn(hand_num);
+            } else if (first == 's') {
+                int points = calcPoints(hand);
+                System.out.println("\n" + player_name + ", you finished with " + 
+                        points + " points!");
+                return points;
+            } else {
+                System.out.println("invalid input, try again");
+            }
+        }
     }
 
 
     public static void main(String[] args) {
-        System.out.println("Hello World");
+        System.out.println("\n === Welcome to the casino! === ");
         startGame();
+        int player_1_score = takeTurn(1);
+        int player_2_score = takeTurn(2);
+        // note: busting counts as -1, so we can just take the max
+        if (player_1_score > player_2_score)
+            System.out.println("\n --- Player One Wins! ---\n");
+        else if (player_1_score < player_2_score)
+            System.out.println("\n --- Player Two Wins! ---\n");
+        else
+            System.out.println("\n --- Tie Game! ---\n");
     }
 }
