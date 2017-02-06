@@ -1,8 +1,6 @@
 import java.io.*;
 import java.util.*;
 
-
-
 class Blackjack {
      
     /** Initialize game objects for both players */
@@ -40,7 +38,6 @@ class Blackjack {
 
     /** Calculate the total points in a hand (arraylist) */
     public static int calcPoints(ArrayList<Card> hand) {
-
         ArrayList<Integer> possScores= new ArrayList<Integer>();
         possScores.add(0);
         // maintaining a list of possible scores b/c Aces have multiple options
@@ -75,7 +72,7 @@ class Blackjack {
         int optimal = -1;
         int minScore = Integer.MAX_VALUE;
         for (int score : possScores) {
-            if (score <= 21 && score > optimal) {
+            if (score <= GOAL && score > optimal) {
                 optimal = score;
             }
             minScore = Math.min(minScore, score);
@@ -134,7 +131,7 @@ class Blackjack {
         displayHand(hand_num);
         // if the score means the game is over, then exit and report that player busts
         if (currScore == GOAL) {
-            System.out.println(player_name + ", you got 21!");
+            System.out.println(player_name + ", you got " + GOAL + "!");
             return currScore;
 
         } else if (currScore > GOAL) {
@@ -165,7 +162,7 @@ class Blackjack {
         }
     }
 
-
+    /** Main game runner here */
     public static void main(String[] args) {
         System.out.println("\n === Welcome to the casino! === ");
         startGame();
